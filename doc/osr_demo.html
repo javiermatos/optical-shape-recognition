@@ -1,0 +1,220 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      --><title>Optical Shape Recognition</title><meta name="generator" content="MATLAB 7.10"><meta name="date" content="2010-03-19"><meta name="m-file" content="osr_demo"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head><body><div class="content"><h1>Optical Shape Recognition</h1><!--introduction--><p>Created by Javier Matos Odut</p><p>This is a demonstration about an optical shape recognition created with MATLAB using different toolboxes:</p><div><ul><li>Neural Network - the recognition engine of this tool was created using a multilayer neural network.</li><li>Image Acquisition/Image Processing - with this two toolboxes we can extract shapes within images and analyze their properties to create the input needed to the neural network.</li></ul></div><p>I have created some useful functions to extract advanced properties of shapes explained in the literature of computer vision and image processing. Harris corner detector is an example of function done to extract properties from shapes.</p><p><a href="http://en.wikipedia.org/wiki/Corner_detection">http://en.wikipedia.org/wiki/Corner_detection</a></p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">1. Extract properties from shapes</a></li><li><a href="#2">2. Analyze data acquired from shapes</a></li><li><a href="#3">3. Training neural Network</a></li><li><a href="#4">4. Shape recognition</a></li><li><a href="#5">5. Show results</a></li><li><a href="#6">Graphical User Interface</a></li></ul></div><h2>1. Extract properties from shapes<a name="1"></a></h2><p>Suppose that we have a folder with binary images. Each image contains a shape that we want to recognize. The first step is to extract characteristics from shapes within images.</p><pre class="codeinput"><span class="comment">% A binary image example</span>
+imshow(<span class="string">'F.png'</span>)
+
+<span class="comment">% Characteristics extraction</span>
+imagesPath = <span class="string">'/home/myuser/symbols/characters'</span>;
+exhaustive = true; <span class="comment">% extract more characteristics from shapes</span>
+progressBar = false; <span class="comment">% show a progress bar</span>
+verbose = true; <span class="comment">% verbose output</span>
+
+[Map,Data] = performCharacteristicsExtraction(imagesPath, exhaustive, progressBar, verbose);
+</pre><pre class="codeoutput">Analizando imagenes
+Analizando imagen A.png
+Analizando imagen B.png
+Analizando imagen C.png
+Analizando imagen D.png
+Analizando imagen E.png
+Analizando imagen F.png
+Analizando imagen G.png
+Analizando imagen H.png
+Analizando imagen I.png
+Analizando imagen J.png
+Analizando imagen K.png
+Analizando imagen L.png
+Analizando imagen M.png
+Analizando imagen N.png
+Analizando imagen O.png
+Analizando imagen P.png
+Analizando imagen Q.png
+Analizando imagen R.png
+Analizando imagen S.png
+Analizando imagen T.png
+Analizando imagen U.png
+Analizando imagen V.png
+Analizando imagen W.png
+Analizando imagen X.png
+Analizando imagen Y.png
+Analizando imagen Z.png
+</pre><img vspace="5" hspace="5" src="osr_demo_01.png" alt=""> <h2>2. Analyze data acquired from shapes<a name="2"></a></h2><p>We can perform a principal component analysis using extracted data from shapes to know if differences are enough to recognize shapes.</p><p><a href="http://en.wikipedia.org/wiki/Principal_component_analysis">http://en.wikipedia.org/wiki/Principal_component_analysis</a></p><pre class="codeinput"><span class="comment">% PCA computation</span>
+[coeff, score] = princomp(Data.input');
+
+clf; hold <span class="string">on</span>;
+
+<span class="comment">% Colors</span>
+colorBase = [ <span class="string">'b'</span> ; <span class="string">'g'</span> ; <span class="string">'r'</span> ; <span class="string">'c'</span> ; <span class="string">'m'</span> ; <span class="string">'y'</span> ];
+
+<span class="keyword">for</span> i=1:unique(max(Data.output))
+    plot(  score(Data.output == i,1), <span class="keyword">...</span>
+           score(Data.output == i,2), <span class="keyword">...</span>
+           <span class="string">'.'</span>,<span class="string">'Color'</span>,colorBase(mod(i-1,length(colorBase))+1));
+<span class="keyword">end</span>
+</pre><img vspace="5" hspace="5" src="osr_demo_02.png" alt=""> <h2>3. Training neural Network<a name="3"></a></h2><p>Now that we have the input and the desired output we can perform the learning process using the neural network.</p><pre class="codeinput"><span class="comment">% Generates the trained neural network</span>
+Engine = performLearning(Data);
+</pre><h2>4. Shape recognition<a name="4"></a></h2><p>Now we load the image that contains shapes that we want to recognize.</p><pre class="codeinput"><span class="comment">% Read input image</span>
+image = imread(<span class="string">'test.png'</span>);
+
+<span class="comment">% Extract shapes from input image</span>
+Shapes = performRecognition(Engine, Map, image);
+</pre><h2>5. Show results<a name="5"></a></h2><pre class="codeinput">clf; imshow(image); hold <span class="string">on</span>;
+
+<span class="comment">% For every shape in the image we show the associated label</span>
+<span class="keyword">for</span> i=1:length(Shapes)
+    text(Shapes(i).Centroid(1),Shapes(i).Centroid(2),[<span class="string">' \leftarrow '</span>,Shapes(i).Label],<span class="string">'FontSize'</span>,18,<span class="string">'Color'</span>,colorBase(mod(i-1,length(colorBase))+1));
+<span class="keyword">end</span>
+</pre><img vspace="5" hspace="5" src="osr_demo_03.png" alt=""> <h2>Graphical User Interface<a name="6"></a></h2><p>The graphical user interface let you perform previous steps in a friendly way. To start it run <strong>launch.m</strong> file that is in the main directory.</p><p><img vspace="5" hspace="5" src="gui.png" alt=""> </p><p class="footer"><br>
+      Published with MATLAB&reg; 7.10<br></p></div><!--
+##### SOURCE BEGIN #####
+%% Optical Shape Recognition
+%
+% Created by Javier Matos Odut
+%
+% This is a demonstration about an optical shape recognition created with
+% MATLAB using different toolboxes:
+%
+% * Neural Network - the recognition engine of this tool was created using
+% a multilayer neural network.
+% * Image Acquisition/Image Processing - with this two toolboxes we can
+% extract shapes within images and analyze their properties to create the
+% input needed to the neural network.
+%
+% I have created some useful functions to extract advanced properties of
+% shapes explained in the literature of computer vision and image
+% processing. Harris corner detector is an example of function done to
+% extract properties from shapes.
+%
+% http://en.wikipedia.org/wiki/Corner_detection
+%
+
+%% 1. Extract properties from shapes
+% Suppose that we have a folder with binary images. Each image contains a
+% shape that we want to recognize. The first step is to extract
+% characteristics from shapes within images.
+
+% A binary image example
+imshow('F.png')
+
+% Characteristics extraction
+imagesPath = 'E:\Proyectos\Desarrollo\Sistema de Reconocimiento Óptico de Formas v2.1\alfabeto\test';
+exhaustive = true; % extract more characteristics from shapes
+progressBar = false; % show a progress bar
+verbose = true; % verbose output
+
+[Map,Data] = performCharacteristicsExtraction(imagesPath, exhaustive, progressBar, verbose);
+
+%% 2. Analyze data acquired from shapes
+% We can perform a principal component analysis using extracted data from
+% shapes to know if differences are enough to recognize shapes.
+%
+% http://en.wikipedia.org/wiki/Principal_component_analysis
+
+% PCA computation
+[coeff, score] = princomp(Data.input');
+
+clf; hold on;
+
+% Colors
+colorBase = [ 'b' ; 'g' ; 'r' ; 'c' ; 'm' ; 'y' ];
+
+for i=1:unique(max(Data.output))
+    plot(  score(Data.output == i,1), ...
+           score(Data.output == i,2), ...
+           '.','Color',colorBase(mod(i-1,length(colorBase))+1));
+end
+
+%% 3. Training neural Network
+% Now that we have the input and the desired output we can perform the
+% learning process using the neural network.
+
+% Generates the trained neural network
+Engine = performLearning(Data);
+
+%% 4. Shape recognition
+% Now we load the image that contains shapes that we want to recognize.
+
+% Read input image
+image = imread('test.png');
+
+% Extract shapes from input image
+Shapes = performRecognition(Engine, Map, image);
+
+%% 5. Show results
+
+clf; imshow(image); hold on;
+
+% For every shape in the image we show the associated label
+for i=1:length(Shapes)
+    text(Shapes(i).Centroid(1),Shapes(i).Centroid(2),[' \leftarrow ',Shapes(i).Label],'FontSize',18,'Color',colorBase(mod(i-1,length(colorBase))+1));
+end
+
+%% Graphical User Interface
+% The graphical user interface let you perform previous steps in a friendly
+% way. To start it run `launch.m` file that is in the main directory.
+%
+% <<gui.png>>
+
+##### SOURCE END #####
+--></body></html>
