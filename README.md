@@ -102,3 +102,5 @@ The graphical user interface let you perform previous steps in a friendly way. T
 
 ![Graphical User Interface](/doc/gui.png?raw=true)
 
+[![Analytics](https://ga-beacon.appspot.com/UA-75268516-1/optical-shape-recognition/readme?pixel)](https://github.com/igrigorik/ga-beacon)
+
